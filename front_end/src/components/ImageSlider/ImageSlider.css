@@ -1,0 +1,44 @@
+/* ImageSlider */
+.shoole {
+    width: 100%;
+    margin: auto;
+  }
+  .shoole .img_shoole{
+    outline: none;        /* يشيل الخط الأسود */
+
+  }
+  .shoole .img_shoole img {
+    width: 95%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 12px;
+    border-radius: 20px;
+    cursor: pointer;
+  }
+
+  @media(max-width:767px){
+    .shoole .img_shoole img {
+      width: 90px;
+      height: 90px;
+
+    }
+  }
+
+
+  /* تغيير لون النقاط عند التحديد */
+.slick-dots li.slick-active button:before {
+    color: var(--main-color); /* اللون الأحمر */
+  }
+
+  /* تغيير حجم النقاط */
+.slick-dots li button:before {
+    font-size: 12px; /* حجم النقاط */
+  }
+
+  
+/* تغيير شكل النقاط عند التمرير */
+.slick-dots li:hover button:before {
+    color: var(--main-color); /* اللون البرتقالي عند التمرير */
+  }
+  
+/* ImageSlider */
