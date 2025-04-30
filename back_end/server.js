@@ -82,6 +82,7 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, "image")));
 app.use(express.static(path.join(__dirname, "videos")));
+app.use(express.static(path.join(__dirname, "audio")));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

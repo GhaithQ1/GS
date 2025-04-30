@@ -29,11 +29,11 @@ const Create_Bost_True_Or_False = () => {
   // إضافة سؤال جديد بعد تعبئة السؤال الحالي
   const handleAddQuestion = () => {
     setQuestions([...questions, { question: '', condition: '' }]); // إضافة سؤال جديد
-          // التمرير إلى آخر عنصر بعد إضافته
-          setTimeout(() => {
-            const lastQuestion = document.querySelector('.form:last-child');
-            lastQuestion?.scrollIntoView({ behavior: 'smooth' });
-          },0);
+    // التمرير إلى آخر عنصر بعد إضافته
+    setTimeout(() => {
+      const lastQuestion = document.querySelector('.form:last-child');
+      lastQuestion?.scrollIntoView({ behavior: 'smooth' });
+    }, 0);
   };
 
   // إرسال البيانات إلى الخادم
@@ -67,40 +67,43 @@ const Create_Bost_True_Or_False = () => {
         <div className="Create_Bost_True_Or_False">
           <h2>Create Bost True Or False</h2>
           <div className="all_form">
-            {questions.map((question, index) => (
-              <div key={index} className="form">
-                <div className="qes_error">
-                  {formErrors[`questions.${index}.question`] && <p className="_error">{formErrors[`questions.${index}.question`]}</p>}
-                  <input
-                    type="text"
-                    placeholder={`Put the question ${index + 1}.`}
-                    value={question.question}
-                    name="question"
-                    onChange={(e) => handleQuestionChange(index, e)}
-                  />
+            {questions.map((question, index) => {
+              return (
+                <div key={index} className="form">
+                  <div className="diverrors">
+                    {formErrors[`questions[${index}].question`] && (
+                      <p className="errors">{formErrors[`questions[${index}].question`]}</p>
+                    )}
+                    <input
+                      type="text"
+                      placeholder={`Put the question ${index + 1}.`}
+                      value={question.question}
+                      name="question"
+                      onChange={(e) => handleQuestionChange(index, e)}
+                    />
+                  </div>
+                  <div className="inpots">
+                    <span
+                      className={question.condition === "true" ? "active" : ""}
+                      onClick={() => handleConditionChange(index, "true")}>
+                      True
+                    </span>
+                    <span
+                      className={question.condition === "false" ? "active" : ""}
+                      onClick={() => handleConditionChange(index, "false")}>
+                      False
+                    </span>
+                  </div>
                 </div>
-                <div className="inpots">
-                  <span
-                    className={question.condition === "true" ? "active" : ""}
-                    onClick={() => handleConditionChange(index, "true")}>
-                    True
-                  </span>
-                  <span
-                    className={question.condition === "false" ? "active" : ""}
-                    onClick={() => handleConditionChange(index, "false")}>
-                    False
-                  </span>
-                </div>
+              );
+            })}
 
-        
-              </div>
-            ))}
           </div>
           <div className="butin">
-          <button type="button" className="add_question_btn" onClick={handleAddQuestion}>Add Another Question</button>
-
-          <button type="submit" className="submit_btn" onClick={handleSubmit}>Submit</button>
-
+          <button type="button" className="add-question-btn" onClick={handleAddQuestion}>
+  <span className="icon">＋</span> Another Question
+</button>
+            <button type="submit" className="submit_btn" onClick={handleSubmit}>Submit</button>
           </div>
         </div>
         <Chat />

@@ -83,6 +83,7 @@ const Create_Bost_choose_the_correct_answer = () => {
   
       // بعد الإرسال، نقوم بتوجيه المستخدم إلى الصفحة الرئيسية
       Navigate('/');
+      console.log("ddddd")
     } catch (err) {
       if (err.response?.data?.errors) {
         const formattedErrors = {};
@@ -90,6 +91,8 @@ const Create_Bost_choose_the_correct_answer = () => {
           formattedErrors[error.path] = error.msg;
         });
         setErrors(formattedErrors);
+        console.log(formattedErrors);
+        console.log("rrrrrr")
       }
     }
   };
@@ -112,8 +115,8 @@ const Create_Bost_choose_the_correct_answer = () => {
             {questions.map((q, idx) => (
               <div className="form" key={idx}>
                 <div className="question_error">
-                  {errors[`questions.${idx}.question`] && (
-                    <p className='errors'>{errors[`questions.${idx}.question`]}</p>
+                  {errors[`questions[${idx}]`] && (
+                    <p className='errors'>{errors[`questions[${idx}]`]}</p>
                   )}
                   <input
                     type="text"
@@ -126,9 +129,7 @@ const Create_Bost_choose_the_correct_answer = () => {
                 <div className="inpots">
                   {["Answer_1", "Answer_2", "Answer_3", "Answer_4"].map((answerKey, i) => (
                     <div key={i} className="div_error">
-                      {errors[`questions.${idx}.${answerKey}`] && (
-                        <p className='errors'>{errors[`questions.${idx}.${answerKey}`]}</p>
-                      )}
+
                       <input
                         type="text"
                         placeholder={`Answer ${i + 1}`}
@@ -142,7 +143,9 @@ const Create_Bost_choose_the_correct_answer = () => {
             ))}
           </div>
             <div className="butin">
-            <button type="button" className="add_btn" onClick={addNewQuestion}>Add Another Question</button>
+            <button type="button" className="add-question-btn" onClick={addNewQuestion}>
+  <span className="icon">＋</span> Another Question
+</button>
             <button type="submit" className="submit_btn" onClick={handleSubmit}>Submit</button>
             </div>
 

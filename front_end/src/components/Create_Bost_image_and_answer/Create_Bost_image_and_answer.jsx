@@ -3,119 +3,114 @@ import "./Create_Bost_image_and_answer.css";
 import Menu from '../main_menu/Menu';
 import Chat from '../chat/Chat';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import { useCookies } from 'react-cookie';
 
 const Create_Bost_image_and_answer = () => {
-
-
+  const [questions, setQuestions] = useState([
+    { img: null, word_1: "", word_2: "", word_3: "", word_4: "", correctWord: "" }
+  ]);
+  const [formErrors, setFormErrors] = useState({});
   const [cookies] = useCookies(['token']);
   const navigate = useNavigate();
-  const [formErrors, setFormErrors] = useState({});
-    const [images, setImages] = useState([]);
-    const [img_qes1, setimg_qes1] = useState([]);
-    const [answer1_qes1, setanswer1_qes1] = useState('');
-    const [answer2_qes1, setanswer2_qes1] = useState('');
-    const [answer3_qes1, setanswer3_qes1] = useState('');
-    const [answer4_qes1, setanswer4_qes1] = useState('');
 
-    const [img_qes2, setimg_qes2] = useState([]);
-    const [answer1_qes2, setanswer1_qes2] = useState('');
-    const [answer2_qes2, setanswer2_qes2] = useState('');
-    const [answer3_qes2, setanswer3_qes2] = useState('');
-    const [answer4_qes2, setanswer4_qes2] = useState('');
+  const addNewQuestion = () => {
+    setQuestions([...questions, { img: null, word_1: "", word_2: "", word_3: "", word_4: "", correctWord: "" }]);
+    setTimeout(() => {
+      const lastQuestion = document.querySelector('.form:last-child');
+      console.log(lastQuestion)
+      lastQuestion?.scrollIntoView({ behavior: 'smooth' });
+    }, );
+  };
 
-    const [img_qes3, setimg_qes3] = useState([]);
-    const [answer1_qes3, setanswer1_qes3] = useState('');
-    const [answer2_qes3, setanswer2_qes3] = useState('');
-    const [answer3_qes3, setanswer3_qes3] = useState('');
-    const [answer4_qes3, setanswer4_qes3] = useState('');
-
-    const [img_qes4, setimg_qes4] = useState([]);
-    const [answer1_qes4, setanswer1_qes4] = useState('');
-    const [answer2_qes4, setanswer2_qes4] = useState('');
-    const [answer3_qes4, setanswer3_qes4] = useState('');
-    const [answer4_qes4, setanswer4_qes4] = useState('');
-
-    const handleSubmit = (event) => {
-      event.preventDefault();
-      const formData =new FormData();
-      formData.append('question_1_img' ,img_qes1)
-      formData.append('question_1_word_1' ,answer1_qes1)
-      formData.append('question_1_word_2' ,answer2_qes1)
-      formData.append('question_1_word_3' ,answer3_qes1)
-      formData.append('question_1_word_4' ,answer4_qes1)
-
-      formData.append('question_2_img' ,img_qes2)
-      formData.append('question_2_word_1' ,answer1_qes2)
-      formData.append('question_2_word_2' ,answer2_qes2)
-      formData.append('question_2_word_3' ,answer3_qes2)
-      formData.append('question_2_word_4' ,answer4_qes2)
-
-      formData.append('question_3_img' ,img_qes3)
-      formData.append('question_3_word_1' ,answer1_qes3)
-      formData.append('question_3_word_2' ,answer2_qes3)
-      formData.append('question_3_word_3' ,answer3_qes3)
-      formData.append('question_3_word_4' ,answer4_qes3)
-
-      formData.append('question_4_img' ,img_qes4)
-      formData.append('question_4_word_1' ,answer1_qes4)
-      formData.append('question_4_word_2' ,answer2_qes4)
-      formData.append('question_4_word_3' ,answer3_qes4)
-      formData.append('question_4_word_4' ,answer4_qes4)
-
-
-      axios.post('http://localhost:8000/api/v2/post/post_4',formData,{
-        headers:{
-          Authorization: `Bearer ${cookies.token}`,
-        }
-      }).then((res)=>{
-        navigate('/')
-      }).catch((err)=>{
-        if (err.response?.data?.errors) {
-          // تحويل مصفوفة الأخطاء إلى كائن
-          console.log(err.response.data.errors)
-          const formattedErrors = {};
-          err.response.data.errors.forEach(error => {
-            formattedErrors[error.path] = error.msg;
-            setFormErrors(formattedErrors)
-          });
-        }
-      })
+  const handleImageChange = (e, index) => {
+    const file = e.target.files[0];
+    if (file) {
+      const updatedQuestions = [...questions];
+      updatedQuestions[index].img = file;
+      setQuestions(updatedQuestions);
     }
+  };
 
-    
+  const handleInputChange = (questionIndex, field, value) => {
+    const updatedQuestions = [...questions];
+    updatedQuestions[questionIndex][field] = value;
+    setQuestions(updatedQuestions);
+  };
 
-
-
-    const handleImageChange = (e, index) => {
-      const file = e.target.files[0];
-      if (file) {
-        // تحديث عرض الصورة في الواجهة (اختياري)
-        const newImages = [...images];
-        newImages[index] = URL.createObjectURL(file);
-        setImages(newImages);
-    
-        // تخزين الملف الفعلي حسب السؤال
-        switch (index) {
-          case 0:
-            setimg_qes1(file);
-            break;
-          case 1:
-            setimg_qes2(file);
-            break;
-          case 2:
-            setimg_qes3(file);
-            break;
-          case 3:
-            setimg_qes4(file);
-            break;
-          default:
-            break;
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+  
+    try {
+      const formData = new FormData();
+  
+      // تحضير الأسئلة وإجاباتها مع ترتيب عشوائي
+      const preparedQuestions = questions.map((q) => {
+        const answers = [q.word_1, q.word_2, q.word_3, q.word_4];
+        const correctAnswer = q.word_1;
+  
+        // إزالة الإجابة الصحيحة وخلط الباقي
+        const otherAnswers = answers.filter(answer => answer !== correctAnswer);
+  
+        const shuffleArray = (array) => {
+          for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+          }
+        };
+  
+        shuffleArray(otherAnswers);
+  
+        // إدخال الإجابة الصحيحة في مكان عشوائي
+        const randomIndex = Math.floor(Math.random() * 4);
+        otherAnswers.splice(randomIndex, 0, correctAnswer);
+  
+        const [word_1, word_2, word_3, word_4] = otherAnswers;
+  
+        return {
+          question: q.question,  // إضافة السؤال
+          word_1,
+          word_2,
+          word_3,
+          word_4,
+          correctWord: correctAnswer,
+          img: q.img || null  // التأكد من إضافة الصورة إذا كانت موجودة
+        };
+      });
+  
+      // تعبئة البيانات في formData
+      preparedQuestions.forEach((q, index) => {
+        formData.append(`questions[${index}][question]`, q.question);
+        if (q.img) {
+          formData.append(`questions[${index}][img]`, q.img);
         }
+        formData.append(`questions[${index}][word_1]`, q.word_1);
+        formData.append(`questions[${index}][word_2]`, q.word_2);
+        formData.append(`questions[${index}][word_3]`, q.word_3);
+        formData.append(`questions[${index}][word_4]`, q.word_4);
+        formData.append(`questions[${index}][correctWord]`, q.correctWord);
+      });
+  
+      // إرسال البيانات إلى الخادم
+      await axios.post('http://localhost:8000/api/v2/post/post_4', formData, {
+        headers: {
+          Authorization: `Bearer ${cookies.token}`,
+        },
+      });
+  
+      navigate('/'); // التوجيه إلى الصفحة الرئيسية بعد الإرسال
+    } catch (err) {
+      if (err.response?.data?.errors) {
+        const formattedErrors = {};
+        err.response.data.errors.forEach(error => {
+          formattedErrors[error.path] = error.msg;
+        });
+        setFormErrors(formattedErrors);
+        console.log(formattedErrors); // طباعة الأخطاء إذا حدثت
       }
-    };
-    
+    }
+  };
+  
 
 
 
@@ -125,143 +120,82 @@ const Create_Bost_image_and_answer = () => {
         <Menu />
         <div className="Create_Bost_image_and_answer">
           <h2>Create Bost Image And Word</h2>
-          <form className="unified_form">
+          <form className="unified_form" onSubmit={handleSubmit}>
+            {questions.map((question, index) => (
+              <div key={index} className="form">
 
-{/* Question 1 */}
-<div className="form">
-  <label className="image-box">
-    {images[0] ? (
-      <img src={images[0]} alt="preview" className="preview-image" />
-    ) : formErrors[`question_1_img`] ? (
-      <p className="image_error">{formErrors[`question_1_img`]}</p>
-    ) : (
-      <span className="plus-sign">+</span>
-    )}
-    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 0)} />
-  </label>
-  <div className="all_input_answer">
-    <div className="word_error">
-      {formErrors[`question_1_word_1`] && <p className="_error">{formErrors[`question_1_word_1`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer1_qes1} onChange={(e) => setanswer1_qes1(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_1_word_2`] && <p className="_error">{formErrors[`question_1_word_2`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer2_qes1} onChange={(e) => setanswer2_qes1(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_1_word_3`] && <p className="_error">{formErrors[`question_1_word_3`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer3_qes1} onChange={(e) => setanswer3_qes1(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_1_word_4`] && <p className="_error">{formErrors[`question_1_word_4`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer4_qes1} onChange={(e) => setanswer4_qes1(e.target.value)} />
-    </div>
-  </div>
-</div>
+                <label className="image-box">
+                  {question.img ? (
+                    <img src={URL.createObjectURL(question.img)} alt="preview" className="preview-image" />
+                  ) : formErrors[`questions[${index}].img`] ? (
+                    <p className="image_error">{formErrors[`questions[${index}].img`]}</p>
+                  ) : (
+                    <span className="plus-sign">+</span>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleImageChange(e, index)}
+                  />
+                </label>
+                <div className="all_input_answer">
+                  <div className="word_error">
+                  {formErrors[`questions`] && (
+                      <p className="_error">{formErrors[`questions`]}</p>
+                    )}
+                    <input
+                      className="input_ward"
+                      type="text"
+                      placeholder="Word 1"
+                      value={question.word_1}
+                      onChange={(e) => handleInputChange(index, "word_1", e.target.value)}
+                    />
+                  </div>
 
-{/* Question 2 */}
-<div className="form">
-  <label className="image-box">
-    {images[1] ? (
-      <img src={images[1]} alt="preview" className="preview-image" />
-    ) : formErrors[`question_2_img`] ? (
-      <p className="image_error">{formErrors[`question_2_img`]}</p>
-    ) : (
-      <span className="plus-sign">+</span>
-    )}
-    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 1)} />
-  </label>
-  <div className="all_input_answer">
-    <div className="word_error">
-      {formErrors[`question_2_word_1`] && <p className="_error">{formErrors[`question_2_word_1`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer1_qes2} onChange={(e) => setanswer1_qes2(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_2_word_2`] && <p className="_error">{formErrors[`question_2_word_2`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer2_qes2} onChange={(e) => setanswer2_qes2(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_2_word_3`] && <p className="_error">{formErrors[`question_2_word_3`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer3_qes2} onChange={(e) => setanswer3_qes2(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_2_word_4`] && <p className="_error">{formErrors[`question_2_word_4`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer4_qes2} onChange={(e) => setanswer4_qes2(e.target.value)} />
-    </div>
-  </div>
-</div>
+                  <div className="word_error">
 
-{/* Question 3 */}
+                    <input
+                      className="input_ward"
+                      type="text"
+                      placeholder="Word 2"
+                      value={question.word_2}
+                      onChange={(e) => handleInputChange(index, "word_2", e.target.value)}
+                    />
+                  </div>
 
-<div className="form">
-  <label className="image-box">
-    {images[2] ? (
-      <img src={images[2]} alt="preview" className="preview-image" />
-    ) : formErrors[`question_3_img`] ? (
-      <p className="image_error">{formErrors[`question_3_img`]}</p>
-    ) : (
-      <span className="plus-sign">+</span>
-    )}
-    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 2)} />
-  </label>
-  <div className="all_input_answer">
-    <div className="word_error">
-      {formErrors[`question_3_word_1`] && <p className="_error">{formErrors[`question_3_word_1`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer1_qes3} onChange={(e) => setanswer1_qes3(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_3_word_2`] && <p className="_error">{formErrors[`question_3_word_2`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer2_qes3} onChange={(e) => setanswer2_qes3(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_3_word_3`] && <p className="_error">{formErrors[`question_3_word_3`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer3_qes3} onChange={(e) => setanswer3_qes3(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_3_word_4`] && <p className="_error">{formErrors[`question_3_word_4`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer4_qes3} onChange={(e) => setanswer4_qes3(e.target.value)} />
-    </div>
-  </div>
-</div>
+                  <div className="word_error">
+    
+                    <input
+                      className="input_ward"
+                      type="text"
+                      placeholder="Word 3"
+                      value={question.word_3}
+                      onChange={(e) => handleInputChange(index, "word_3", e.target.value)}
+                    />
+                  </div>
 
-{/* Question 4 */}
-<div className="form">
-  <label className="image-box">
-    {images[3] ? (
-      <img src={images[3]} alt="preview" className="preview-image" />
-    ) : formErrors[`question_4_img`] ? (
-      <p className="image_error">{formErrors[`question_4_img`]}</p>
-    ) : (
-      <span className="plus-sign">+</span>
-    )}
-    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 3)} />
-  </label>
-  <div className="all_input_answer">
-    <div className="word_error">
-      {formErrors[`question_4_word_1`] && <p className="_error">{formErrors[`question_4_word_1`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer1_qes4} onChange={(e) => setanswer1_qes4(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_4_word_2`] && <p className="_error">{formErrors[`question_4_word_2`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer2_qes4} onChange={(e) => setanswer2_qes4(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_4_word_3`] && <p className="_error">{formErrors[`question_4_word_3`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer3_qes4} onChange={(e) => setanswer3_qes4(e.target.value)} />
-    </div>
-    <div className="word_error">
-      {formErrors[`question_4_word_4`] && <p className="_error">{formErrors[`question_4_word_4`]}</p>}
-      <input className="input_ward" type="text" placeholder="Enter word..." value={answer4_qes4} onChange={(e) => setanswer4_qes4(e.target.value)} />
-    </div>
-  </div>
-</div>
+                  <div className="word_error">
 
-</form>
+                    <input
+                      className="input_ward"
+                      type="text"
+                      placeholder="Word 4"
+                      value={question.word_4}
+                      onChange={(e) => handleInputChange(index, "word_4", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+<button type="button" className="add-question-btn" onClick={addNewQuestion}>
+  <span className="icon">＋</span> Another Question
+</button>
 
-
-            <button type="submit" className="submit_btn" onClick={handleSubmit}>Submit</button>
+            <button type="submit" className="submit_btn">Submit</button>
+          </form>
         </div>
-          <Chat />
+        <Chat />
       </div>
     </div>
   );

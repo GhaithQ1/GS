@@ -12,11 +12,14 @@ import Create_Bost_choose_the_correct_answer from './components/Create_Bost_choo
 import Create_Bost_True_Or_False from './components/Create_Bost_True_Or_False/Create_Bost_True_Or_False';
 import Create_Bost_image_and_answer from './components/Create_Bost_image_and_answer/Create_Bost_image_and_answer';
 import Create_Bost_Video_and_image from './components/Create_Bost_Video_End_Image/Create_Bost_Video_End_Image';
+import Create_Bost_Ifrem from './components/Create_Bost_Ifrem/Create_Bost_Ifrem';
 import Profile from './components/profile/Profile';
 import Get_Shoole_By_Id from './components/Get_Shoole_By_Id/Get_Shoole_By_Id';
+import Sign_school from './components/Sign_school/Sign_school';
 import './App.css';
 import { UserProvider } from './components/Context';
 import { CookiesProvider ,useCookies} from 'react-cookie';
+import Iframe from './components/Iframe/Iframe';
 function AppContent() {
 
 
@@ -54,6 +57,7 @@ function AppContent() {
       <Route path='/explore' element={<><Header /><Explore /></>} />
       <Route path='/chat' element={<><Header /><Menu /><Chat /></>} />
       <Route path='/signandlog' element={<><SignAndLog /></>} />
+      <Route path='/sign_school' element={<><Sign_school /></>} />
       <Route path='/bookmark' element={<><Header /><BookMark /></>} />
       <Route path='/create_bost_image_and_ward' element={<><Header /><Create_Bost_image_and_ward /></>} />
       <Route path='/create_bost_choose_the_correct_answer' element={<><Header /><Create_Bost_choose_the_correct_answer /></>} />
@@ -61,7 +65,8 @@ function AppContent() {
       <Route path='/create_bost_image_and_answer' element={<><Header /><Create_Bost_image_and_answer /></>} />
       <Route path='/Create_Bost_Video_and_image' element={<><Header /><Create_Bost_Video_and_image /></>} />
       <Route path='/profile' element={<><Header /><Profile /></>} />
-      <Route path='/Get_Shoole_By/:id' element={<><Header /><Get_Shoole_By_Id/></>} />
+      <Route path='/Get_Shoole_By/:idParams' element={<><Header /><Get_Shoole_By_Id/></>} />
+      <Route path='/Create_Bost_Ifrem' element={<><Header /><Create_Bost_Ifrem/></>} />
     </Routes>
     </UserProvider>
   );

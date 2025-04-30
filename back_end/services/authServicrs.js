@@ -19,6 +19,65 @@ const sendemailMe = require("../sindEmailMe");
 const session = require('express-session'); // لضمان استخدام الجلسات
 // -----------------------------------
 
+const multer = require("multer")
+const sharp = require('sharp');
+const {v4 : uuidv4} = require("uuid")
+
+
+// 2- memoryStorage
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new ApiError("File is not an image", 400), false);
+  }
+};
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+// معالجة صورتين بطرق منفصلة
+exports.imguserr = upload.fields([
+  { name: "Cover_image", maxCount: 1 }, // صورة واحدة فقط
+  { name: "profilImage", maxCount: 1 },          // صورة واحدة فقط
+]);
+
+exports.resizeCover_images = asyncHandler(async (req, res, next) => {
+    const filename = `user-${uuidv4()}-${Date.now()}.jpeg`;
+
+    if (req.files && req.files.Cover_image) {
+        await sharp(req.files.Cover_image[0].buffer) // استخدم `req.files.Cover_images[0]`
+            .resize(600, 600)
+            .toFormat("jpeg")
+            .jpeg({ quality: 90 })
+            .toFile(`image/user/${filename}`);
+
+        req.body.Cover_image = filename;
+    }
+
+    next();
+});
+
+exports.resizeprofilImage = asyncHandler(async (req, res, next) => {
+    const filename = `user-${uuidv4()}-${Date.now()}.jpeg`;
+    if (req.files && req.files.profilImage) {
+      
+        await sharp(req.files.profilImage[0].buffer) // استخدم `req.files.profilImage[0]`
+            .resize(600, 600)
+            .toFormat("jpeg")
+            .jpeg({ quality: 90 })
+            .toFile(`image/user/${filename}`);
+
+        req.body.profilImage = filename;
+    }
+
+    next();
+});
+
+
+
 exports.sign_up = asyncHandler(async (req, res, next) => {
     // التحقق إذا الإيميل مستخدم مسبقاً
     const existingUser = await usermodel.findOne({ email: req.body.email });
@@ -34,6 +93,12 @@ exports.sign_up = asyncHandler(async (req, res, next) => {
         email: req.body.email,
         password: hashedPassword,
         passwordConfirm: req.body.passwordConfirm,
+        address: req.body.address,
+        phone: req.body.phone,
+        description: req.body.description,
+        role: req.body.role,
+        Cover_image: req.body.Cover_image,
+        profilImage: req.body.profilImage,
         isVerified: true
     });
 

@@ -17,6 +17,9 @@ const {
   Accept_friend_request,
   Reject_friend_request,
   toggleSavedPost,
+  imguserr,
+  resizeCover_images,
+  resizeprofilImage
 } = require("../services/authServicrs");
 
 const {
@@ -44,7 +47,7 @@ authroutes
   .route("/update_user_password_my")
   .put(check_login, update_user_password_my_V, update_user_password_my);
 
-authroutes.route("/sign_up").post(sign_up_V, sign_up);
+authroutes.route("/sign_up").post(imguserr,resizeCover_images,resizeprofilImage,sign_up_V, sign_up);
 // authroutes.route("/verify").post(verify_code);
 
 authroutes.route("/login").post(login_V, login);

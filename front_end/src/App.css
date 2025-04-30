@@ -175,3 +175,6 @@ transition: 0.3s all;
     left: 10px;
     top: -20px;
   }
+  .diverrors{
+    position: relative;
+  }

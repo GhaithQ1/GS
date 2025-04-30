@@ -1,186 +1,177 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; 
-import { useCookies } from 'react-cookie';
+import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useCookies } from "react-cookie";
 import "./Create_Bost_image_and_ward.css";
-import Menu from '../main_menu/Menu';
-import Chat from '../chat/Chat';
+import Menu from "../main_menu/Menu";
+import Chat from "../chat/Chat";
 
 const Create_Bost_image_and_ward = () => {
-  
-const [cookies] = useCookies(['token']);
+  const [cookies] = useCookies(["token"]);
   const navigate = useNavigate();
 
-    const [images, setImages] = useState([]);
-    const [imageFiles, setImageFiles] = useState([]);
-    const [words, setWords] = useState(["", "", "", "", ""]);
-    const [formErrors, setFormErrors] = useState({});
+  // الحالة لتتبع النماذج المضافة
+  const [forms, setForms] = useState([{ image: null, audio: null, word: "" }]);
+  const [formErrors, setFormErrors] = useState({});
 
+  const handleAddForm = () => {
+    setForms([...forms, { image: null, audio: null, word: "" }]);
+    setTimeout(() => {
+      const lastQuestion = document.querySelector('.form:last-child');
+      lastQuestion?.scrollIntoView({ behavior: 'smooth' });
+    }, 0); // إضافة نموذج جديد
+  };
 
-    const handleSubmit = (event) => {
-      event.preventDefault();
-      const formData =new FormData();
-      formData.append('postImage_1',imageFiles[0])
-      formData.append('postImage_2',imageFiles[1])
-      formData.append('postImage_3',imageFiles[2])
-      formData.append('postImage_4',imageFiles[3])
-      formData.append('postImage_5',imageFiles[4])
-      formData.append('word_1',words[0])
-      formData.append('word_2',words[1])
-      formData.append('word_3',words[2])
-      formData.append('word_4',words[3])
-      formData.append('word_5',words[4])
+  const handleFormChange = (index, field, value) => {
+    setForms((prevForms) =>
+      prevForms.map((form, idx) =>
+        idx === index ? { ...form, [field]: value } : form
+      )
+    );
+  };
 
-      axios.post('http://localhost:8000/api/v2/post/post_1',
-        formData,
-        {headers:{
+  const handleRemoveForm = (index) => {
+    setForms((prevForms) => prevForms.filter((_, idx) => idx !== index)); // إزالة النموذج
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const formData = new FormData();
+
+    forms.forEach((form, index) => {
+      if (form.image) {
+        formData.append(`boxes[${index}][postImage]`, form.image);
+      }
+      if (form.audio) {
+        formData.append(`boxes[${index}][audio]`, form.audio);
+      }
+      formData.append(`boxes[${index}][word]`, form.word);
+    });
+
+    axios
+      .post("http://localhost:8000/api/v2/post/post_1", formData, {
+        headers: {
           Authorization: `Bearer ${cookies.token}`,
-        }}
-
-      ).then((res)=>{
-        navigate('/')
-        console.log(res)
-      }).catch((err)=>{
-        // console.log(err)
+        },
+      })
+      .then((res) => {
+        navigate("/");
+        console.log(res);
+      })
+      .catch((err) => {
         if (err.response?.data?.errors) {
-          // تحويل مصفوفة الأخطاء إلى كائن
-          console.log(err.response.data.errors)
           const formattedErrors = {};
-          err.response.data.errors.forEach(error => {
+          err.response.data.errors.forEach((error) => {
             formattedErrors[error.path] = error.msg;
-            setFormErrors(formattedErrors)
+            setFormErrors(formattedErrors);
+            console.log(formattedErrors)
           });
         }
-        
-      })
-
-
-
-    }
-
-    const handleImageChange = (e, index) => {
-      const file = e.target.files[0];
-      if (file) {
-        // للعرض
-        const newImages = [...images];
-        newImages[index] = URL.createObjectURL(file);
-        setImages(newImages);
-    
-        // للتخزين
-        const newImageFiles = [...imageFiles];
-        newImageFiles[index] = file;
-        setImageFiles(newImageFiles);
-      }
-    };
-    
-
-  const handleWordChange = (e, index) => {
-    const newWords = [...words];
-    newWords[index] = e.target.value;
-    setWords(newWords);
+      });
   };
-  
 
   return (
-<div className="home">
-  <div className="container">
-    <Menu />
-    <div className="bost_image_and_ward">
-      <h2>Create Bost Image And Word</h2>
-      <form className="unified_form">
-        
-        <div className="form">
-          <label className="image-box">
-            {images[0] ? (
-              <img src={images[0]} alt="preview" className="preview-image" />
-            ) : formErrors[`postImage_1`] ? (
-              <p className="image_error">{formErrors[`postImage_1`]}</p>
-            ) : (
-              <span className="plus-sign">+</span>
-            )}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 0)} />
-          </label>
-          <div className="word_error">
-            {formErrors[`word_1`] && <p className="_error">{formErrors[`word_1`]}</p>}
-            <input className="input_ward" type="text" value={words[0]} onChange={(e) => handleWordChange(e, 0)} placeholder="Enter word..." />
-          </div>
-        </div>
+    <div className="home">
+      <div className="container">
+        <Menu />
+        <div className="bost_image_and_ward">
+          <h2>Create Bost Image, Audio, and Word</h2>
+          <form className="unified_form">
+            {forms.map((form, index) => (
+              <div className="form" key={index}>
+                {/* زر الإغلاق */}
+                <button
+                  type="button"
+                  className="remove_form_btn"
+                  onClick={() => handleRemoveForm(index)}
+                >
+                  X
+                </button>
+                <label className="image-box">
+                  {form.image ? (
+                    <img
+                      src={URL.createObjectURL(form.image)}
+                      alt="preview"
+                      className="preview-image"
+                    />
+                  ) : formErrors[`files[${index}]`] ? (
+                    <p className="image_error">
+                      {formErrors[`files[${index}]`]}
+                    </p>
+                  ) : (
+                    <span className="plus-sign">+</span>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) =>
+                      handleFormChange(index, "image", e.target.files[0])
+                    }
+                  />
+                </label>
 
-        <div className="form">
-          <label className="image-box">
-            {images[1] ? (
-              <img src={images[1]} alt="preview" className="preview-image" />
-            ) : formErrors[`postImage_2`] ? (
-              <p className="image_error">{formErrors[`postImage_2`]}</p>
-            ) : (
-              <span className="plus-sign">+</span>
-            )}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 1)} />
-          </label>
-          <div className="word_error">
-            {formErrors[`word_2`] && <p className="_error">{formErrors[`word_2`]}</p>}
-            <input className="input_ward" type="text" value={words[1]} onChange={(e) => handleWordChange(e, 1)} placeholder="Enter word..." />
-          </div>
-        </div>
+                <label className="audio-box">
+                  <div className="audio-container">
+                    {form.audio ? (
+                      <p className="audio-name">
+                        Uploaded Audio: {form.audio.name}
+                      </p>
+                    ) : formErrors[`boxes[${index}][audio]`] ? (
+                      <p className="image_error">
+                        {formErrors[`boxes[${index}][audio]`]}
+                      </p>
+                    ) : (
+                      <div className="upload-placeholder">
+                        <span className="upload-icon">🎵</span>
+                        <p className="upload-text">
+                          Click to upload an audio file
+                        </p>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      style={{ display: "none" }}
+                      onChange={(e) =>
+                        handleFormChange(index, "audio", e.target.files[0])
+                      }
+                    />
+                  </div>
+                </label>
 
-        <div className="form">
-          <label className="image-box">
-            {images[2] ? (
-              <img src={images[2]} alt="preview" className="preview-image" />
-            ) : formErrors[`postImage_3`] ? (
-              <p className="image_error">{formErrors[`postImage_3`]}</p>
-            ) : (
-              <span className="plus-sign">+</span>
-            )}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 2)} />
-          </label>
-          <div className="word_error">
-            {formErrors[`word_3`] && <p className="_error">{formErrors[`word_3`]}</p>}
-            <input className="input_ward" type="text" value={words[2]} onChange={(e) => handleWordChange(e, 2)} placeholder="Enter word..." />
+                <div className="word_error">
+                  {formErrors[`boxes[${index}][word]`] && (
+                    <p className="_error">
+                      {formErrors[`boxes[${index}][word]`]}
+                    </p>
+                  )}
+                  <input
+                    className="input_ward"
+                    type="text"
+                    value={form.word}
+                    onChange={(e) =>
+                      handleFormChange(index, "word", e.target.value)
+                    }
+                    placeholder="Enter word..."
+                  />
+                </div>
+              </div>
+            ))}
+          </form>
+          <div className="butin">
+                      <button type="button" className="add-question-btn" onClick={handleAddForm}>
+            <span className="icon">＋</span> Another Question
+          </button>
+          <button type="submit" className="submit_btn" onClick={handleSubmit}>
+            Submit
+          </button>
           </div>
-        </div>
 
-        <div className="form">
-          <label className="image-box">
-            {images[3] ? (
-              <img src={images[3]} alt="preview" className="preview-image" />
-            ) : formErrors[`postImage_4`] ? (
-              <p className="image_error">{formErrors[`postImage_4`]}</p>
-            ) : (
-              <span className="plus-sign">+</span>
-            )}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 3)} />
-          </label>
-          <div className="word_error">
-            {formErrors[`word_4`] && <p className="_error">{formErrors[`word_4`]}</p>}
-            <input className="input_ward" type="text" value={words[3]} onChange={(e) => handleWordChange(e, 3)} placeholder="Enter word..." />
-          </div>
         </div>
-
-        <div className="form">
-          <label className="image-box">
-            {images[4] ? (
-              <img src={images[4]} alt="preview" className="preview-image" />
-            ) : formErrors[`postImage_5`] ? (
-              <p className="image_error">{formErrors[`postImage_5`]}</p>
-            ) : (
-              <span className="plus-sign">+</span>
-            )}
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageChange(e, 4)} />
-          </label>
-          <div className="word_error">
-            {formErrors[`word_5`] && <p className="_error">{formErrors[`word_5`]}</p>}
-            <input className="input_ward" type="text" value={words[4]} onChange={(e) => handleWordChange(e, 4)} placeholder="Enter word..." />
-          </div>
-        </div>
-
-      </form>
-      <button type="submit" className="submit_btn" onClick={handleSubmit}>Submit</button>
+        <Chat />
+      </div>
     </div>
-    <Chat />
-  </div>
-</div>
-
   );
 };
 

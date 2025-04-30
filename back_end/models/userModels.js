@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-// 1 
+// تعريف المخطط الخاص بالمستخدم
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        require: [true, "require"],
+        required: [true, "الاسم مطلوب"], // تحسين صيغة الرسالة
     },
 
     slug: {
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema({
 
     email: {
         type: String,
-        require: [true, "require"],
+        required: [true, "البريد الإلكتروني مطلوب"],
         lowercase: true,
     },
 
@@ -25,8 +25,8 @@ const userSchema = new mongoose.Schema({
 
     password: {
         type: String,
-        require: [true, "require"],
-        minlemgth: [5, "minlemgth"]
+        required: [true, "كلمة المرور مطلوبة"],
+        minlength: [5, "كلمة المرور يجب أن تكون على الأقل 5 أحرف"]
     },
 
     password_Update_Time: Date,
@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
 
     points: {
         type: Number,
-        default: 20
+        default: 20,
     },
 
     friends: [{
@@ -67,9 +67,11 @@ const userSchema = new mongoose.Schema({
         }
     }],
 
-    verificationCode: { type: Number },
+    verificationCode: { 
+        type: Number 
+    },
 
-    // خاصية جديدة لحفظ جميع أنواع المنشورات
+    // خاصية لحفظ المنشورات
     savedPosts: [{
         post: {
             type: mongoose.Schema.ObjectId,
@@ -77,32 +79,38 @@ const userSchema = new mongoose.Schema({
         },
         postModel: {
             type: String,
-            enum: ["post_1", "post_2", "post_3", "post_4", "post"] // الأنواع المدعومة من النماذج
+            enum: ["post_1", "post_2", "post_3", "post_4", "post"] // أنواع المنشورات المدعومة
         }
     }],
 
+
+    address: String,
+    description: String,
+    Cover_image: String,
+
+    // تتبع محاولات حل منشورات من النوع 2
     solvedPost_2: [
         {
-          postId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "post_2",
-          },
-          result: [
-            {
-              questionId: mongoose.Schema.Types.ObjectId,
-              yourAnswer: String,
-              correctAnswer: String,
-              isCorrect: Boolean
+            postId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "post_2",
+            },
+            result: [
+                {
+                    questionId: mongoose.Schema.Types.ObjectId,
+                    yourAnswer: String,
+                    correctAnswer: String,
+                    isCorrect: Boolean
+                }
+            ],
+            createdAt: {
+                type: Date,
+                default: Date.now
             }
-          ],
-          createdAt: {
-            type: Date,
-            default: Date.now
-          }
         }
-      ],
+    ],
 
-
+    // تتبع محاولات حل منشورات من النوع 3
     solvedPost_3: [
         {
             postId: {
@@ -122,12 +130,33 @@ const userSchema = new mongoose.Schema({
                 default: Date.now
             }
         }
-    ]
+    ],
 
+    // تتبع محاولات حل منشورات من النوع 4
+    solvedPost_4: [
+        {
+            postId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "post_4"
+            },
+            result: [
+                {
+                    questionId: mongoose.Schema.Types.ObjectId,
+                    yourAnswer: String,
+                    correctAnswer: String,
+                    isCorrect: Boolean
+                }
+            ],
+            createdAt: {
+                type: Date,
+                default: Date.now
+            }
+        }
+    ],
 
-}, { timestamps: true })
+}, { timestamps: true });
 
+// تعريف النموذج
+const usermodel = mongoose.model("user", userSchema);
 
-const usermodel = mongoose.model("user", userSchema)
-
-module.exports = usermodel
+module.exports = usermodel;

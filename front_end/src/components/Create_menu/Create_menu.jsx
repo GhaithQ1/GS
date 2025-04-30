@@ -35,6 +35,9 @@ const Create_menu = () => {
           <NavLink to="/create_bost_true_or_false" className='links'>
             <p>True Or False</p>
           </NavLink>
+          <NavLink to="/Create_Bost_Ifrem" className='links'>
+            <p>Create Bost Ifrem</p>
+          </NavLink>
 
         </div>
       </div>

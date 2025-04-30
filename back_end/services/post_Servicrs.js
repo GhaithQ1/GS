@@ -2,6 +2,7 @@ const Post_1 = require("../models/post_1_Models");
 const Post_2 = require("../models/post_2_Models");
 const Post_3 = require("../models/post_3_Models");
 const Post_4 = require("../models/post_4_Models");
+const Post_6 = require("../models/post_6_Models");
 const Post = require("../models/post_Models");
 const User = require("../models/userModels");
 const ApiError = require("../ApiError");
@@ -15,7 +16,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 const { v4: uuidv4 } = require("uuid");
 
-const multerStorage = multer.memoryStorage();
+// const multerStorage = multer.memoryStorage();
 
 const fs = require("fs");
 
@@ -24,185 +25,300 @@ fs.writeFile("example.txt", "Hello World!", (err) => {
   console.log("File created successfully!");
 });
 
+// const multer = require("multer");
+// const sharp = require("sharp");
+// const { v4: uuidv4 } = require("uuid");
+// const fs = require("fs");
 
-
+// مرشح الملفات لتحديد الصور والفيديوهات فقط
 const multerFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image") || file.mimetype.startsWith("video")) {
-    cb(null, true);
+  if (
+    file.mimetype.startsWith("image") || 
+    file.mimetype.startsWith("video") || 
+    file.mimetype.startsWith("audio")
+  ) {
+    cb(null, true); // قبول الملف إذا كان من الأنواع المسموح بها
   } else {
-    cb(new ApiError("The uploaded file is not an image or a video", 400), false);
+    cb(new ApiError("The uploaded file is not an image, video, or audio", 400), false); // رفض الملف مع خطأ
   }
 };
 
+// إعداد Multer
+const multerStorage = multer.memoryStorage();
 const upload = multer({
   storage: multerStorage,
   fileFilter: multerFilter,
-}).fields([
-  { name: "postImage_1", maxCount: 1 },
-  { name: "postImage_2", maxCount: 1 },
-  { name: "postImage_3", maxCount: 1 },
-  { name: "postImage_4", maxCount: 1 },
-  { name: "postImage_5", maxCount: 1 },
-  { name: "question_1_img", maxCount: 1 },
-  { name: "question_2_img", maxCount: 1 },
-  { name: "question_3_img", maxCount: 1 },
-  { name: "question_4_img", maxCount: 1 },
-  { name: "img_post", maxCount: 1 },
-  { name: "video_post", maxCount: 1 },
-]);
+}).any(); // يقبل أي عدد من الملفات المرسلة
 
 
-exports.resizeVideo_video_post = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.video_post) {
-    const file = req.files.video_post[0];
-    const filename = `postVideo_1-${uuidv4()}-${Date.now()}.mp4`;
-    const filePath = `videos/posts/${filename}`;
+// رفع مقاطع الصوت
+// exports.processAudioFile = asyncHandler(async (req, res, next) => {
+//   try {
+//     // التحقق من وجود ملفات مرفوعة
+//     if (req.files && req.files.length > 0) {
+//       // تصفية الملفات لحقل audio_post
+//       const audioPosts = req.files.filter((file) => file.fieldname === "postAudio");
 
-    // حفظ الفيديو
-    await fs.promises.writeFile(filePath, file.buffer);
+//       if (audioPosts.length > 0) {
+//         const file = audioPosts[0]; // التعامل مع أول ملف
+//         const filename = `postAudio-${uuidv4()}-${Date.now()}.mp3`;
 
-    req.body.video_post = filename;
+//         // إنشاء مجلد الصوتيات إذا لم يكن موجودًا
+//         await fs.promises.mkdir("audio/posts", { recursive: true });
+
+//         // حفظ الملف الصوتي مباشرة
+//         const filePath = `audio/posts/${filename}`;
+//         await fs.promises.writeFile(filePath, file.buffer);
+
+//         // تحديث req.body لتحتوي على اسم الملف
+//         req.body.postAudio = filename;
+//       }
+//     }
+
+//     // الانتقال إلى الميدلوير التالي
+//     next();
+//   } catch (error) {
+//     next(error); // تمرير الخطأ إلى Middleware الأخطاء
+//   }
+// });
+exports.processAudioFile = asyncHandler(async (req, res, next) => {
+  try {
+    if (req.files && req.files.length > 0) {
+      req.body.boxes = req.body.boxes || []; // تأكد من وجود مصفوفة `boxes`
+
+      // إنشاء المجلد إذا لم يكن موجودًا
+      await fs.promises.mkdir("audio/posts", { recursive: true });
+
+      // معالجة الملفات الصوتية
+      await Promise.all(
+        req.files.map(async (file) => {
+          // استخراج الإندكس من اسم الحقل، مثل `boxes[0][audio]`
+          const match = file.fieldname.match(/boxes\[(\d+)\]\[audio\]/);
+          if (match) {
+            const index = parseInt(match[1], 10); // استخراج الإندكس كرقم
+            const filename = `postAudio-${uuidv4()}-${Date.now()}.mp3`;
+
+            console.log(`Processing audio file for box index: ${index}`);
+
+            // حفظ الملف الصوتي مباشرة
+            const filePath = `audio/posts/${filename}`;
+            await fs.promises.writeFile(filePath, file.buffer);
+
+            console.log(`Audio file processed and saved as: ${filename}`);
+
+            // ضمان وجود العنصر المرتبط بالملف الصوتي
+            req.body.boxes[index] = req.body.boxes[index] || {};
+            req.body.boxes[index].postAudio = filename; // تخزين اسم الملف الصوتي
+          } else {
+            console.log(`Fieldname does not match expected pattern: ${file.fieldname}`);
+          }
+        })
+      );
+    } else {
+      console.log("No audio files found in request.");
+    }
+
+    next(); // الانتقال إلى الـ Middleware التالي
+  } catch (error) {
+    console.error("Error during audio processing:", error.message);
+    next(error); // تمرير الخطأ إلى Middleware الأخطاء
   }
-  next();
 });
 
-// تستخدم .fields لذا احذف imgcompany و imgcompanyLogo
+// رفع الصور
+exports.resizeImg_post_img = asyncHandler(async (req, res, next) => {
+  try {
+    // التحقق من وجود ملفات مرفوعة
+    if (req.files && req.files.length > 0) {
+      // تصفية الملفات لحقل img_post
+      const imgPosts = req.files.filter((file) => file.fieldname === "img_post");
+
+      if (imgPosts.length > 0) {
+        const file = imgPosts[0]; // التعامل مع أول ملف
+        const filename = `img_post-${uuidv4()}-${Date.now()}.jpeg`;
+
+        // إنشاء مجلد الصور إذا لم يكن موجودًا
+        await fs.promises.mkdir("image/posts", { recursive: true });
+
+        // معالجة الصورة باستخدام sharp
+        await sharp(file.buffer)
+          .toFormat("jpeg")
+          .jpeg({ quality: 90 })
+          .toFile(`image/posts/${filename}`);
+
+        // تحديث req.body لتحتوي على اسم الملف
+        req.body.img_post = filename;
+      }
+    }
+
+    // الانتقال إلى الميدلوير التالي
+    next();
+  } catch (error) {
+    next(error); // تمرير الخطأ إلى Middleware الأخطاء
+  }
+});
+
+// رفع الفيديوهات
+exports.resizeVideo_video_post = asyncHandler(async (req, res, next) => {
+  try {
+    // التحقق من وجود ملفات مرفوعة
+    if (req.files && req.files.length > 0) {
+      // تصفية الملفات لحقل video_post
+      const videoPosts = req.files.filter((file) => file.fieldname === "video_post");
+
+      if (videoPosts.length > 0) {
+        const file = videoPosts[0]; // التعامل مع أول ملف
+        const filename = `postVideo-${uuidv4()}-${Date.now()}.mp4`;
+
+        // إنشاء مجلد الفيديوهات إذا لم يكن موجودًا
+        await fs.promises.mkdir("videos/posts", { recursive: true });
+
+        // حفظ الفيديو مباشرة
+        const filePath = `videos/posts/${filename}`;
+        await fs.promises.writeFile(filePath, file.buffer);
+
+        // تحديث req.body لتحتوي على اسم الملف
+        req.body.video_post = filename;
+      }
+    }
+
+    // الانتقال إلى الـ Middleware التالي
+    next();
+  } catch (error) {
+    next(error); // تمرير الخطأ إلى Middleware الأخطاء
+  }
+});
+
+// استخدام multer في رفع الملفات
 exports.uploadImages = upload;
 
 
-exports.resizeImg_post_img = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.img_post) {
-    const file = req.files.img_post[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `img_post-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
 
-    req.body.img_post = filename;
+// exports.resizeImages = asyncHandler(async (req, res, next) => {
+//   try {
+//     if (req.files && req.files.length > 0) {
+//       // console.log("Files received:", req.files);
+
+//       req.body.boxes = req.body.boxes || []; // تأكد من وجود مصفوفة `boxes`
+
+//       // إنشاء المجلد إذا لم يكن موجودًا
+//       await fs.promises.mkdir("image/posts", { recursive: true });
+
+//       await Promise.all(
+//         req.files.map(async (file) => {
+//           const match = file.fieldname.match(/postImage_(\d+)/); // استخراج الإندكس
+//           if (match) {
+//             const index = parseInt(match[1], 10);
+//             const filename = `postImage-${uuidv4()}-${Date.now()}.jpeg`;
+
+//             console.log(`Processing file for box index: ${index}`);
+
+//             // معالجة الصورة باستخدام sharp
+//             await sharp(file.buffer)
+//               .toFormat("jpeg")
+//               .jpeg({ quality: 90 })
+//               .toFile(`image/posts/${filename}`);
+
+//             console.log("Processed file saved as:", filename);
+
+//             // ضمان وجود العنصر المرتبط بالصورة
+//             req.body.boxes[index] = req.body.boxes[index] || {};
+//             req.body.boxes[index].postImage = filename; // تخزين اسم الصورة
+//           } else {
+//             console.log("Fieldname does not match expected pattern:", file.fieldname);
+//           }
+//         })
+//       );
+//     } else {
+//       console.log("No files found in request.");
+//     }
+
+//     next(); // الانتقال إلى الميدلوير التالي
+//   } catch (error) {
+//     console.error("Error during image processing:", error.message);
+//     next(error); // تمرير الخطأ إلى Middleware الأخطاء
+//   }
+// });
+exports.resizeImages = asyncHandler(async (req, res, next) => {
+  try {
+    if (req.files && req.files.length > 0) {
+      req.body.boxes = req.body.boxes || []; // التأكد من وجود مصفوفة `boxes`
+
+      // إنشاء المجلد إذا لم يكن موجودًا
+      await fs.promises.mkdir("image/posts", { recursive: true });
+
+      // معالجة الصور
+      await Promise.all(
+        req.files.map(async (file) => {
+          // استخراج الإندكس من اسم الحقل، مثل `boxes[0][postImage]`
+          const match = file.fieldname.match(/boxes\[(\d+)\]\[postImage\]/);
+          if (match) {
+            const index = parseInt(match[1], 10); // استخراج الإندكس كرقم
+            const filename = `box_img-${uuidv4()}-${Date.now()}.jpeg`;
+
+            console.log(`Processing file for box index: ${index}`);
+
+            // معالجة الصورة باستخدام sharp
+            await sharp(file.buffer)
+              .toFormat("jpeg")
+              .jpeg({ quality: 90 })
+              .toFile(`image/posts/${filename}`);
+
+            console.log(`Image processed and saved as: ${filename}`);
+
+            // ضمان وجود العنصر المرتبط بالصورة
+            req.body.boxes[index] = req.body.boxes[index] || {};
+            req.body.boxes[index].postImage = filename; // تخزين اسم الصورة
+          } else {
+            console.log(`Fieldname does not match expected pattern: ${file.fieldname}`);
+          }
+        })
+      );
+    } else {
+      console.log("No files found in request.");
+    }
+
+    next(); // الانتقال إلى الـ Middleware التالي
+  } catch (error) {
+    console.error("Error during image processing:", error.message);
+    next(error); // تمرير الخطأ إلى Middleware الأخطاء
   }
-  next();
-});
-
-exports.resizeImg_postImage_1 = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.postImage_1) {
-    const file = req.files.postImage_1[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `postImage_1-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.postImage_1 = filename;
-  }
-  next();
-});
-exports.resizeImg_postImage_2 = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.postImage_2) {
-    const file = req.files.postImage_2[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `postImage_2-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.postImage_2 = filename;
-  }
-  next();
-});
-exports.resizeImg_postImage_3 = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.postImage_3) {
-    const file = req.files.postImage_3[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `postImage_3-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.postImage_3 = filename;
-  }
-  next();
-});
-exports.resizeImg_postImage_4 = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.postImage_4) {
-    const file = req.files.postImage_4[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `postImage_4-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.postImage_4 = filename;
-  }
-  next();
-});
-exports.resizeImg_postImage_5 = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.postImage_5) {
-    const file = req.files.postImage_5[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `postImage_5-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.postImage_5 = filename;
-  }
-  next();
 });
 
 // ============================================================
+exports.resizeImg_questions = asyncHandler(async (req, res, next) => {
+  try {
+    if (req.files && req.files.length > 0) {
+      req.body.questions = req.body.questions || [];
 
-exports.resizeImg_question_1_img = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.question_1_img) {
-    const file = req.files.question_1_img[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `question_1_img-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
+      // معالجة الصور باستخدام `fieldname`
+      await Promise.all(
+        req.files.map(async (file , index) => {
+          // استخراج الإندكس من اسم الحقل، مثل `questions[0][img]`
+          const match = file.fieldname.match(/questions\[(\d+)\]\[img\]/);
+          if (match) {
+            const index = parseInt(match[1], 10); // استخراج الإندكس كعدد
+            const filename = `question_img-${uuidv4()}-${Date.now()}.jpeg`;
 
-    req.body.question_1_img = filename;
+            // إعادة تحجيم الصورة وحفظها
+            await sharp(file.buffer)
+              .toFormat("jpeg")
+              .jpeg({ quality: 90 })
+              .toFile(`image/posts/${filename}`);
+
+            // ضمان وجود السؤال المرتبط بالصورة
+            req.body.questions[index] = req.body.questions[index] || { words: [] };
+            req.body.questions[index].img = filename; // تخزين اسم الصورة في السؤال
+          }
+        })
+      );
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error during image processing:", error.message);
+    res.status(500).json({ message: "Error during image processing.", error: error.message });
   }
-  next();
-});
-exports.resizeImg_question_2_img = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.question_2_img) {
-    const file = req.files.question_2_img[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `question_2_img-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.question_2_img = filename;
-  }
-  next();
-});
-exports.resizeImg_question_3_img = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.question_3_img) {
-    const file = req.files.question_3_img[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `question_3_img-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.question_3_img = filename;
-  }
-  next();
-});
-exports.resizeImg_question_4_img = asyncHandler(async (req, res, next) => {
-  if (req.files && req.files.question_4_img) {
-    const file = req.files.question_4_img[0]; // يأخذ أول ملف في المصفوفة
-    const filename = `question_4_img-${uuidv4()}-${Date.now()}.jpeg`;
-    await sharp(file.buffer)
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(`image/posts/${filename}`);
-
-    req.body.question_4_img = filename;
-  }
-  next();
 });
 
 // =========================================================================
@@ -221,33 +337,24 @@ exports.createPost = asyncHandler(async (req, res, next) => {
 
 // =================================================
 
-
 exports.createPost_1 = asyncHandler(async (req, res, next) => {
-  const post = await Post_1.create({
-    user: req.user._id,
-    box1: {
-      postImage_1: req.body.postImage_1,
-      word_1: req.body.word_1,
-    },
-    box2: {
-      postImage_2: req.body.postImage_2,
-      word_2: req.body.word_2,
-    },
-    box3: {
-      postImage_3: req.body.postImage_3,
-      word_3: req.body.word_3,
-    },
-    box4: {
-      postImage_4: req.body.postImage_4,
-      word_4: req.body.word_4,
-    },
-    box5: {
-      postImage_5: req.body.postImage_5,
-      word_5: req.body.word_5,
-    },
-  });
+  console.log("Files received:", req.files);
+  try {
+    const boxes = req.body.boxes.map((box) => ({
+      postImage: box.postImage, // الصورة الخاصة بـ box
+      word: box.word,           // الكلمة المرتبطة بـ box
+      postAudio: box.postAudio, // رابط التسجيل الصوتي الخاص بـ box
+    }));
 
-  res.status(200).json({ data: post });
+    const post = await Post_1.create({
+      user: req.user._id,
+      boxes, // إضافة المصفوفة إلى المنشور
+    });
+
+    res.status(200).json({ data: post });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // ======================================================================
@@ -266,7 +373,6 @@ exports.createPost_2 = asyncHandler(async (req, res, next) => {
       Answer_1: q.Answer_1,
       Answer_2: q.Answer_2,
       Answer_3: q.Answer_3,
-      Answer_4: q.Answer_4,
       Answer_4: q.Answer_4,
       correctAnswer: q.correctAnswer,
     })),
@@ -442,41 +548,131 @@ exports.chickPost_3 = asyncHandler(async (req, res, next) => {
 
 
 // ==================================================================
+exports.createPost_4 = asyncHandler(async (req, res, next) => {
 
-exports.createPost_4 = asyncHandler(async (req, res, next) =>{
-  const post = await Post_4.create({
-    user: req.user._id,
-    question_1_img : req.body.question_1_img,
-    question_1_word_1 : req.body.question_1_word_1,
-    question_1_word_2 : req.body. question_1_word_2,
-    question_1_word_3 : req.body. question_1_word_3,
-    question_1_word_4 : req.body. question_1_word_4,
-    
-    question_2_img : req.body.question_2_img,
-    question_2_word_1 : req.body.question_2_word_1,
-    question_2_word_2 : req.body. question_2_word_2,
-    question_2_word_3 : req.body. question_2_word_3,
-    question_2_word_4 : req.body. question_2_word_4,
+  console.log("Body:", req.body); // النصوص
+console.log("Files:", req.files); // الملفات (الصور)
+  try {
+    // التحقق من أن الأسئلة موجودة كمصفوفة
+    if (!Array.isArray(req.body.questions)) {
+      return res.status(400).json({ message: "الأسئلة يجب أن تكون مصفوفة تحتوي على جميع الحقول المطلوبة." });
+    }
 
-    question_3_img : req.body.question_3_img,
-    question_3_word_1 : req.body.question_3_word_1,
-    question_3_word_2 : req.body. question_3_word_2,
-    question_3_word_3 : req.body. question_3_word_3,
-    question_3_word_4 : req.body. question_3_word_4,
+    // التحقق من صحة كل سؤال
+    req.body.questions.forEach((question, index) => {
+      if (!question.img || !question.word_1 || !question.word_2 || !question.word_3 || !question.word_4 || !question.correctWord) {
+        throw new Error(`السؤال رقم ${index + 1} يفتقد إلى أحد الحقول المطلوبة: img, words[4], correctWord.`);
+      }
+    });
 
-    question_4_img : req.body.question_4_img,
-    question_4_word_1 : req.body.question_4_word_1,
-    question_4_word_2 : req.body. question_4_word_2,
-    question_4_word_3 : req.body. question_4_word_3,
-    question_4_word_4 : req.body. question_4_word_4,
+    // إنشاء المنشور
+    const post = await Post_4.create({
+      user: req.user._id,
+      questions: req.body.questions,
+      likes: req.body.likes || [],
+      comments: req.body.comments || [],
+      type: req.body.type || "post_4",
+    });
+
+    res.status(200).json({ message: "تم إنشاء المنشور بنجاح", data: post });
+  } catch (error) {
+    res.status(500).json({ message: "حدث خطأ ما", error: error.message });
+  }
+});
+
+
+exports.chickPost_4 = asyncHandler(async (req, res, next) => {
+  const { postId, answers } = req.body; // استلام بيانات البوست والإجابات المرسلة من المستخدم
+
+  // البحث عن البوست بواسطة ID
+  const post = await Post_4.findById(postId);
+  if (!post) {
+    return res.status(404).json({ message: "البوست غير موجود" });
+  }
+
+  const questions = post.questions;
+
+  // تحويل الأسئلة إلى خريطة لسهولة الوصول
+  const questionMap = {};
+  questions.forEach(q => {
+    questionMap[q._id.toString()] = q; // استخدام ID لكل سؤال كمفتاح
   });
 
-  res.status(200).json({ data: post });
+  // مقارنة الإجابات
+  const result = answers.map((ans) => {
+    const question = questionMap[ans.questionId];
+    if (!question) {
+      return {
+        questionId: ans.questionId,
+        error: "السؤال غير موجود في هذا البوست"
+      };
+    }
+
+    return {
+      questionId: question._id,
+      yourAnswer: ans.answer,
+      correctAnswer: question.correctWord,
+      isCorrect: ans.answer === question.correctWord
+    };
+  });
+
+  // تحديث بيانات المحاولة داخل المستخدم
+  const user = await User.findById(req.user._id);
+
+  const existingAttempt = user.solvedPost_4.find(
+    (attempt) => attempt.postId.toString() === postId
+  );
+
+  if (existingAttempt) {
+    // تحديث الإجابات فقط
+    result.forEach((newAnswer) => {
+      const existingIndex = existingAttempt.result.findIndex(
+        (r) => r.questionId.toString() === newAnswer.questionId.toString()
+      );
+
+      if (existingIndex !== -1) {
+        // تحديث الإجابة القديمة
+        existingAttempt.result[existingIndex] = newAnswer;
+      } else {
+        // إضافة إجابة جديدة
+        existingAttempt.result.push(newAnswer);
+      }
+    });
+  } else {
+    // أول مرة، إضافة محاولة جديدة
+    user.solvedPost_4.push({
+      postId: post._id,
+      result: result
+    });
+  }
+
+  await user.save(); // حفظ بيانات المستخدم
+
+  res.status(200).json({
+    postId,
+    result
+  });
+});
 
 
-})
+// ===================================================================
+exports.createPost_6 = asyncHandler(async (req, res, next) => {
 
+  try {
+    // إنشاء المنشور
+    const post = await Post_6.create({
+      user: req.user._id,
+      ifrem:{  url: req.body.url,
+      des: req.body.des,}
+    
+    });
+    console.log(req.body)
 
+    res.status(200).json({ message: "تم إنشاء المنشور بنجاح", data: post });
+  } catch (error) {
+    res.status(500).json({ message: "حدث خطأ ما", error: error.message });
+  }
+});
 // ===================================================================
 
 
@@ -488,6 +684,7 @@ exports.getAllPosts = asyncHandler(async (req, res, next) => {
     const posts3 = await Post_3.find().populate('user').populate('comments.user_comment');
     const posts4 = await Post_4.find().populate('user').populate('comments.user_comment');
     const posts = await Post.find().populate('user').populate('comments.user_comment');
+    const post_6 = await Post_6.find().populate('user').populate('comments.user_comment');
     
 
     // دمج جميع البوستات في مصفوفة واحدة
@@ -497,6 +694,7 @@ exports.getAllPosts = asyncHandler(async (req, res, next) => {
       ...posts3,
       ...posts4,
       ...posts,
+      ...post_6,
     ];
 
     // فرز البوستات حسب تاريخ الإنشاء من الأحدث إلى الأقدم
@@ -522,7 +720,8 @@ exports.getUserPosts = asyncHandler(async (req, res, next) => {
     const posts3 = await Post_3.find({ user: userId });
     const posts4 = await Post_4.find({ user: userId });
     const posts = await Post.find({ user: userId });
-
+    const post_6 = await post_6.find({ user: userId });
+    
     // دمج جميع البوستات في مصفوفة واحدة
     let userPosts = [
       ...posts1,
@@ -530,6 +729,7 @@ exports.getUserPosts = asyncHandler(async (req, res, next) => {
       ...posts3,
       ...posts4,
       ...posts,
+      ...post_6,
     ];
 
     // فرز البوستات حسب تاريخ الإنشاء من الأحدث إلى الأقدم
@@ -574,6 +774,10 @@ exports.deletePost = asyncHandler(async (req, res, next) => {
       post = await Post.findById(id);
       if (post) schema = "post";
     }
+    if (!post) {
+      post = await Post_6.findById(id);
+      if (post) schema = "post_6";
+    }
 
     // التحقق من وجود البوست
     if (!post) {
@@ -601,7 +805,7 @@ exports.deletePost = asyncHandler(async (req, res, next) => {
 // =================================================================
 
 
-const schemas = [Post_1, Post_2, Post_3, Post_4, Post]; // جميع السكيمات مجمعة في مصفوفة
+const schemas = [Post_1, Post_2, Post_3, Post_4, Post,Post_6]; // جميع السكيمات مجمعة في مصفوفة
 
 exports.create_post_comments = asyncHandler(async (req, res, next) => {
   const { id } = req.params;

@@ -16,30 +16,47 @@ exports.createPost_V = [
 ];
 
 exports.createPost_1_V = [
-  check("word_1").notEmpty().withMessage("Add a word"),
-  check("word_2").notEmpty().withMessage("Add a word"),
-  check("word_3").notEmpty().withMessage("Add a word"),
-  check("word_4").notEmpty().withMessage("Add a word"),
-  check("word_5").notEmpty().withMessage("Add a word"),
-
-  // middleware يدوي لفحص الصور
+  // التحقق من الكلمات داخل مصفوفة boxes
   (req, res, next) => {
     const errors = validationResult(req).array();
 
-    if (!req.files?.postImage_1) {
-      errors.push({ path: "postImage_1", msg: "Add a photo" });
+    // التحقق من وجود البيانات المرسلة في الحقل boxes
+    if (!req.body.boxes || !Array.isArray(req.body.boxes) || req.body.boxes.length === 0) {
+      errors.push({ path: "boxes", msg: "Add at least one box" });
+    } else {
+      // التحقق من كل عنصر داخل مصفوفة boxes
+      req.body.boxes.forEach((box, index) => {
+        if (!box.word) {
+          errors.push({ path: `boxes[${index}][word]`, msg: `Add a word for box ${index + 1}` });
+        }
+      });
     }
-    if (!req.files?.postImage_2) {
-      errors.push({ path: "postImage_2", msg: "Add a photo" });
-    }
-    if (!req.files?.postImage_3) {
-      errors.push({ path: "postImage_3", msg: "Add a photo" });
-    }
-    if (!req.files?.postImage_4) {
-      errors.push({ path: "postImage_4", msg: "Add a photo" });
-    }
-    if (!req.files?.postImage_5) {
-      errors.push({ path: "postImage_5", msg: "Add a photo" });
+
+    next();
+  },
+
+  // middleware يدوي لفحص الصور والملفات الصوتية
+  (req, res, next) => {
+    const errors = validationResult(req).array();
+
+    if (req.files && req.files.length > 0) {
+      req.body.boxes.forEach((box, index) => {
+        const postImageField = `boxes[${index}][postImage]`;
+        const audioField = `boxes[${index}][audio]`;
+
+        const imageExists = req.files.some((file) => file.fieldname === postImageField);
+        const audioExists = req.files.some((file) => file.fieldname === audioField);
+
+        if (!imageExists) {
+          errors.push({ path: postImageField, msg: `Add an image for box ${index + 1}` });
+        }
+
+        if (!audioExists) {
+          errors.push({ path: audioField, msg: `Add an audio file for box ${index + 1}` });
+        }
+      });
+    } else {
+      errors.push({ path: "files", msg: "No files uploaded." });
     }
 
     if (errors.length > 0) {
@@ -49,103 +66,103 @@ exports.createPost_1_V = [
     next();
   },
 
-  // للتأكد من إرسال النتيجة النهائية بعد التحقق
+  // التأكد من إرسال النتيجة النهائية بعد التحقق
   validationMiddiel,
 ];
+
+
 
 
 exports.createPost_2_V = [
-  body("questions")
-    .isArray({ min: 1 })
-    .withMessage("You must add at least one question"),
-  
-  body("questions.*.question")
-    .notEmpty()
-    .withMessage("Each question must have a text"),
+  body("questions.*")
+    .isObject()
+    .withMessage("Each question must be an object with question and answers."),
 
-  body("questions.*.Answer_1")
-    .notEmpty()
-    .withMessage("Each question must have Answer 1"),
+  (req, res, next) => {
+    const questions = req.body.questions;
 
-  body("questions.*.Answer_2")
-    .notEmpty()
-    .withMessage("Each question must have Answer 2"),
+    if (!Array.isArray(questions)) {
+      return next(); // let express-validator handle the type error
+    }
 
-  body("questions.*.Answer_3")
-    .notEmpty()
-    .withMessage("Each question must have Answer 3"),
+    const errors = [];
 
-  body("questions.*.Answer_4")
-    .notEmpty()
-    .withMessage("Each question must have Answer 4"),
+    questions.forEach((q, index) => {
+      if (
+        !q.question?.trim() ||
+        !q.Answer_1?.trim() ||
+        !q.Answer_2?.trim() ||
+        !q.Answer_3?.trim() ||
+        !q.Answer_4?.trim()
+      ) {
+        errors.push({
+          msg: `Please complete all fields in question #${index + 1} (question and 4 answers).`,
+          path: `questions[${index}]`,
+        });
+      }
+    });
 
-  validationMiddiel,
+    if (errors.length > 0) {
+      return res.status(400).json({ errors });
+    }
+
+    next();
+  },
 ];
 
 
+
+
 exports.createPost_3_V = [
-  body("questions").isArray({ min: 1 }).withMessage("يجب إضافة سؤال واحد على الأقل"),
+  body("questions").isArray({ min: 1 }).withMessage("At least one question must be added."),
 
   body("questions.*.question")
     .notEmpty()
-    .withMessage("كل سؤال يجب أن يحتوي على نص"),
+    .withMessage("Each question must contain text"),
 
   body("questions.*.condition")
     .not()
     .isEmpty()
-    .withMessage("يجب تحديد ما إذا كانت الإجابة صحيحة أو خاطئة"),
+    .withMessage("You must determine whether the answer is true or false."),
 
   validationMiddiel,
 ];
 
+
+
 exports.createPost_4_V = [
-  check("question_1_img")
-  .notEmpty().withMessage("Add a photo"),
-  check("question_1_word_1")
-  .notEmpty().withMessage("Add a word"),
-  check("question_1_word_2")
-  .notEmpty().withMessage("Add a word"),
-  check("question_1_word_3")
-  .notEmpty().withMessage("Add a word"),
-  check("question_1_word_4")
-  .notEmpty().withMessage("Add a word"),
+  body("questions")
+    .isArray({ min: 1 })
+    .withMessage("At least one question must be added."),
 
-  check("question_2_img")
-  .notEmpty().withMessage("Add a photo"),
-  check("question_2_word_1")
-  .notEmpty().withMessage("Add a word"),
-  check("question_2_word_2")
-  .notEmpty().withMessage("Add a word"),
-  check("question_2_word_3")
-  .notEmpty().withMessage("Add a word"),
-  check("question_2_word_4")
-  .notEmpty().withMessage("Add a word"),
+  body("questions.*.img")
+    .notEmpty()
+    .withMessage("Each question must include an image."),
 
-  check("question_3_img")
-  .notEmpty().withMessage("Add a photo"),
-  check("question_3_word_1")
-  .notEmpty().withMessage("Add a word"),
-  check("question_3_word_2")
-  .notEmpty().withMessage("Add a word"),
-  check("question_3_word_3")
-  .notEmpty().withMessage("Add a word"),
-  check("question_3_word_4")
-  .notEmpty().withMessage("Add a word"),
-
-  check("question_4_img")
-  .notEmpty().withMessage("Add a photo"),
-  check("question_4_word_1")
-  .notEmpty().withMessage("Add a word"),
-  check("question_4_word_2")
-  .notEmpty().withMessage("Add a word"),
-  check("question_4_word_3")
-  .notEmpty().withMessage("Add a word"),
-  check("question_4_word_4")
-  .notEmpty().withMessage("Add a word"),
-
+  body("questions").custom((questions) => {
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      if (!q.word_1 || !q.word_2 || !q.word_3 || !q.word_4) {
+        throw new Error("All four word fields (word_1 to word_4) must be filled for each question.");
+      }
+    }
+    return true;
+  }),
 
   validationMiddiel,
-]
+];
+
+
+
+
+
+
+exports.createPost_6_V = [
+  check('url')
+    .notEmpty().withMessage("You must add URL")
+    .isURL().withMessage("The URL must be valid"),
+  validationMiddiel,
+];
 
 exports.create_post_comments_V = [
   check("comment")
@@ -153,7 +170,6 @@ exports.create_post_comments_V = [
   ,
   validationMiddiel,
 ]
-
 
 
 

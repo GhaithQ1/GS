@@ -5,10 +5,15 @@ export const Relod_post = () => {
     <>
 
 
-<div className="loader">
-    <div className="ball"></div>
-    <div className="ball"></div>
-    <div className="ball"></div>
+<div className="dot-spinner">
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
+    <div className="dot-spinner__dot"></div>
 </div>
 
     </>
